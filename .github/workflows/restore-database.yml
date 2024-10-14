@@ -1,0 +1,16 @@
+name: restore database
+on:
+  - workflow_dispatch
+jobs:
+  restore:
+    runs-on: [self-hosted]
+    steps:
+      - name: Determine Database Container
+        run: |
+          CONTAINER_NAME=$(kubectl -n jerna get pods --no-headers -o custom-columns=":metadata.name" | grep "blazor-web-db-deployment")
+      - name: Copy Backup File to Database Container
+        run: |
+          kubectl -n jerna cp /home/dorian/dump.sql $CONTAINER_NAME:/dump.sql
+      - name: Restore Database from Backup
+        run: |
+          kubectl -n jerna exec $CONTAINER_NAME -- sh -c 'psql -U jerna jernadb -a < /dump.sql'

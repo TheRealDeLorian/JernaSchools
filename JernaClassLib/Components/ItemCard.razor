@@ -1,0 +1,41 @@
+﻿@using System.Drawing;
+
+<div class="col bg-jernalb">
+    <div class="col">
+        @if (item.Image is not null)
+        {
+            <img src="data:image/png;base64,@Convert.ToBase64String(item.Image)" />
+        }
+        else
+        {
+            <img src="/images/homeschool2.jpg"/>
+        }
+        <div class="col">
+            <h5>@item.Description</h5>
+        </div>
+    </div>
+    <div class="col">
+        <div class="row"><h3> @item.ItemName </h3></div>
+        <div class="row">
+            <h5 class="col my-auto"> $@item.Price</h5> 
+            <a class="text-black col-auto my-auto text-end bi-cart-plus h2" @onclick="() => AddItemToCartAsync(item)"></a> 
+        </div>
+        @foreach (var tagItem in item.TagItems)
+        {
+            <div class="tag"> @tagItem.Tag?.TagName </div>
+        }
+    </div>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public Item item { get; set; } = null!;
+    [Parameter, EditorRequired]
+    public Func<int, Task> addItemToCart { get; set; } = null!;
+
+    public async Task AddItemToCartAsync(Item item)
+    {
+        await addItemToCart(item.Id);
+    }
+}

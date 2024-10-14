@@ -1,0 +1,11 @@
+﻿@page "/"
+@using JernaClassLib.MetricsNLogs
+
+<Index />
+
+@code {
+  protected override void OnInitialized()
+  {
+    JernaMetrics.HomePageTimesVisitedCount.Add(1);
+  }
+}

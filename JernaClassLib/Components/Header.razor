@@ -1,0 +1,129 @@
+﻿@inject NavigationManager navManager
+@inject EventService Events
+@inject ICartService CartService
+@implements IDisposable
+
+<header class="our-color">
+    @* This was bg-primary before. *@
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between">
+            <div class="text-center my-auto" @onclick='() => ToggleHamburger()'>
+                <h1 class="bi bi-list fs-1"> </h1>
+            </div>
+            <div class="leftStuff bi">
+                <img src="images/butterflylogo.png" alt="JM Watson, MEd -- logo" @onclick='() => NavigateTo("/")' />
+            </div>
+            <div class="topStuff d-flex flex-wrap">
+                @if (user is not null && user.Isadmin is not null && user.Isadmin.Value)
+                {
+                    <button class="opt-btn" @onclick='() => NavigateTo("/admin")'>Admin</button>
+                }
+                @if (user is not null)
+                {
+                    <div class="opt-text my-auto" style="color: white;">Welcome, @user.Username! </div>
+                }
+                @if ((user is not null && user.Email.Contains("Random")) || user is null)
+                {
+                    <button class="opt-btn" @onclick='() => NavigateTo("/login")'>Login</button>
+                }
+                else
+                {
+                    <button class="opt-btn" @onclick='() => NavigateTo("/login")'>Logout</button>
+                }
+                <button class="opt-btn" @onclick='() => NavigateTo("/cart")'>Cart (@numOfCartItems) </button>
+                <div class="search">
+                    <form @onsubmit=@(() => NavigateTo($"search/{Constants.AllSearch}/{userSearchString}"))>
+                        <input type="text" class="txt-box" @bind-value="userSearchString" />
+                    </form>
+                    <i class="bi bi-search text-end" @onclick='() => NavigateTo($"search/{Constants.AllSearch}/{userSearchString}")' />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Global.hMenu == true)
+    {
+        <div class="" style="background-color: #e1e1e1;">
+            @* Would like to vertically center the text in these buttons. *@
+            <div class="p-2 d-flex flex-wrap justify-content-around">
+                <NavLink class="btn" style="background-color: white; min-width: 160px; min-height: 45px; border-color: white; align-content: center;" @onclick='() => NavigateTo("search/" + Constants.AllSearch)' Match="NavLinkMatch.All">
+                    <span class="" aria-hidden="true">Shop By All</span>
+                </NavLink>
+                <NavLink class="btn" style="background-color: white; min-width: 160px; min-height: 45px; border-color: white; align-content: center;" @onclick='() => NavigateTo("search/" + Constants.GradeSearch)' Match="NavLinkMatch.All">
+                    <span class="" aria-hidden="true">Shop By Grade</span>
+                </NavLink>
+                <NavLink class="btn" style="background-color: white; min-width: 160px; min-height: 45px; border-color: white; align-content: center;" @onclick='() => NavigateTo(Constants.CoachSearch)' Match="NavLinkMatch.All">
+                    <span class="" aria-hidden="true">Personal Coaching</span>
+                </NavLink>
+            </div>
+            <div class="p-2 d-flex flex-wrap justify-content-around">
+                <NavLink class="btn" style="background-color: white; min-width: 160px; min-height: 45px; border-color: white; align-content: center;" @onclick='() => NavigateTo("search/" + Constants.DigitalSearch)' Match="NavLinkMatch.All">
+                    <span class="" aria-hidden="true">Digital Products</span>
+                </NavLink>
+                <NavLink class="btn" style="background-color: white; min-width: 160px; min-height: 45px; border-color: white; align-content: center;" @onclick='() => NavigateTo("search/" + Constants.PhysicalSearch)' Match="NavLinkMatch.All">
+                    <span class="" aria-hidden="true">Physical Products</span>
+                </NavLink>
+                <NavLink class="btn" style="background-color: white; min-width: 160px; min-height: 45px; border-color: white; align-content: center;" @onclick='() => NavigateTo(Constants.ToolSearch)' Match="NavLinkMatch.All">
+                    <span class="" aria-hidden="true">Tools For Parents</span>
+                </NavLink>
+            </div>
+        </div>
+    }
+</header>
+
+@code {
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    User? user;
+    int numOfCartItems = 0;
+    public string userSearchString = "";
+    public string userIdentifier = "admin"; //string.Empty;
+
+    void NavigateTo(string s)
+    {
+        Global.hMenu = false;
+        navManager.NavigateTo(s);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Events.UserChangeEvent += (User newUser) => refresh(newUser);
+        Events.CartTotalChanged += (int newCount) => addToCart(newCount);
+        if (jernaAuthState is not null && user is null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            numOfCartItems = (await CartService.GetAllItemsInCartAsync(user.Id)).Sum(ci => ci.Quantity);
+            StateHasChanged();
+        }
+    }
+
+    void ToggleHamburger()
+    {
+        if (Global.hMenu == true)
+        {
+            Global.hMenu = false;
+        }
+        else
+        {
+            Global.hMenu = true;
+        }
+    }
+
+    void refresh(User u)
+    {
+        user = u;
+        StateHasChanged();
+    }
+
+    void addToCart(int newTotal)
+    {
+        numOfCartItems = newTotal;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Events.UserChangeEvent -= refresh;
+        Events.CartTotalChanged -= addToCart;
+    }
+}

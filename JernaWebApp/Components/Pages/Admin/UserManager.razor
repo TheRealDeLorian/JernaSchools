@@ -1,0 +1,74 @@
+﻿@using JernaClassLib.Data.DatabaseObjects
+@inject UserService userService
+
+<h2>Manage Existing Users</h2>
+
+<div class="row">
+    @if (SuccessMessage is not null)
+    {
+        <br />
+        <div class="alert alert-success">@SuccessMessage</div>
+    }
+
+    @if (ErrorMessage is not null)
+    {
+        <br />
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+</div>
+
+<div class="row">
+    <div class="col">User Id</div>
+    <div class="col">Username</div>
+    <div class="col">User Email</div>
+    <div class="col">Notes</div>
+    <div class="col">Is admin?</div>
+    <div class="col">Save/Delete buttons</div>
+</div>
+@if (users != null)
+{
+    @foreach (var user in users)
+    {
+        <div class="row">
+            <div class="col"><input type="text" @bind="user.Id" /></div>
+            <div class="col"><input type="text" @bind=user.Username /></div>
+            <div class="col"><input type="text" @bind="user.Email" /></div>
+            <div class="col"><textarea @bind=user.Notes style="resize: none"></textarea></div>
+            <div class="col"><input type="checkbox" @bind="user.Isadmin" /></div>
+
+            <div class="col">
+                <button class="btn btn-outline-success" @onclick="() => EditUserAsync(user)">Save</button>
+                <button class="btn btn-outline-danger" @onclick="() => DeleteUserAsync(user)">Delete</button>
+            </div>
+
+
+        </div>
+    }
+}
+
+
+@code {
+    List<User> users = new();
+    string? ErrorMessage;
+    string? SuccessMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await userService.GetAllUsersAsync();
+    }
+
+    async Task EditUserAsync(User user)
+    {
+        await userService.UpdateUserAsync(user);
+        ErrorMessage = null;
+        SuccessMessage = $"Success! User {user.Username} edited in database";
+    }
+
+    async Task DeleteUserAsync(User user)
+    {
+        await userService.DeleteUserAsync(user);
+        ErrorMessage = null;
+        SuccessMessage = $"Success! User {user.Username} deleted from database";
+    }
+
+}

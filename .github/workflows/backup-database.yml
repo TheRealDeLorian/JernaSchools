@@ -1,0 +1,11 @@
+name: backup database
+on:
+  - workflow_dispatch
+jobs:
+  backup:
+    runs-on: [self-hosted]
+    steps:
+      - name: backup
+        run: |
+          CONTAINER_NAME=$(kubectl -n jerna get pods --no-headers -o custom-columns=":metadata.name" | grep "blazor-web-db-deployment")
+          kubectl -n jerna exec -t $CONTAINER_NAME -- pg_dump -c -U jerna jernadb > /home/dorian/dump.sql

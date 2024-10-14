@@ -1,0 +1,55 @@
+﻿@page "/contact"
+@using JernaClassLib.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Text.RegularExpressions
+@inject IEmailService emailService
+
+<div class="container">
+    @if (!submitted)
+    {
+        <div class="container bg-jernalb py-3">
+                <EditForm Model="@contactForm" OnValidSubmit="@HandleValidSubmit" FormName="ContactForm">
+                    <div class="row m-2">
+                        <DataAnnotationsValidator />
+                    </div>
+                    <div class="row m-3">
+                        <h5 class="col-auto justify-self-center">Your Email:</h5>
+                        <InputText class="col" @bind-Value="contactForm.CustomerEmail" />
+                    </div>
+                    <div class="row m-3">
+                        <h5 class="col-auto">Message</h5>
+                        <InputTextArea @bind-Value="contactForm.Message"/>
+                    </div>
+                    <div class="row m-2">
+                        <button type="submit" class="btn btn-primary w-25">Submit</button>
+                    </div>
+                    <div class="row m-2">
+                        <ValidationSummary class="col m-3" />
+                    </div>
+                </EditForm>
+        </div>
+    }
+
+    @if (submitted)
+    {
+        <div class="alert alert-info container py-3">Form successfully submitted.</div>
+    }
+</div>
+
+@code {
+    ContactForm contactForm = new();
+    bool submitted = false;
+
+    async Task HandleValidSubmit()
+    {
+        var emailInfo = new EmailInfo()
+        {
+            Email = Constants.EmailAddress,
+            Subject = $"New customer feedback from {Constants.SanitizeHtml(contactForm.CustomerEmail ?? "")}",
+            HTMLBody = $"<p>{Constants.SanitizeHtml(contactForm.Message ?? "")}</p>"
+        };
+        await emailService.SendEmailAsync(emailInfo);
+        contactForm = new();
+        submitted = true;
+    }
+}

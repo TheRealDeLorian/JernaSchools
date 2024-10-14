@@ -1,0 +1,32 @@
+﻿@inject ICartService CartService
+@for (int i = 0; i < items.Count; i++)
+{
+    if ((i % 2) == 1) //Every second time print two of them.
+    {
+        <div class="container">
+            <div class="row" style="padding: 1em;">
+                <CartCard item="items[i - 1]" removeItemFromCart="removeItemFromCart" updateItemQty="updateItemQty"/>
+                <CartCard item="items[i]" removeItemFromCart="removeItemFromCart" updateItemQty="updateItemQty"/>
+            </div>
+        </div>
+    }
+
+    if ((items.Count % 2 == 1) && (i == items.Count - 1)) //This is used to print the last item if there isn't an even amount of items.
+    {
+        <div class="container">
+            <div class="row" style="padding: 1em;">
+                <CartCard item="items[i]" removeItemFromCart="removeItemFromCart" updateItemQty="updateItemQty" />
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public List<CartItem> items { get; set; } = null!;
+    [Parameter, EditorRequired]
+    public Func<int, int, Task> updateItemQty { get; set; } = null!;
+    [Parameter, EditorRequired]
+    public Func<int, Task> removeItemFromCart { get; set; } = null!;
+}
+

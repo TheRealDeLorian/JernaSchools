@@ -1,0 +1,94 @@
+.bg-primary {
+    background-color: #3339eb;
+}
+
+.our-color {
+    background-color: #374675;
+}
+
+.opt-btn {
+    background-color: white;
+    border-radius: 2.5em;
+    min-width: 4em;
+    min-height: 2.5em;
+    max-height: 2.5em;
+    margin-top: 0em;
+    margin-right: 1em;
+}
+
+.opt-text {
+    min-width: 6em;
+    min-height: 2.5em;
+    max-height: 2.5em;
+    margin-top: 0em;
+    margin-right: 1em;
+}
+
+.txt-box {
+    background-color: white;
+    border-radius: 2.5em;
+    width: 15em;
+    padding: 0.4em;
+    padding-left: 2em;
+}
+
+.search {
+    position: relative;
+}
+
+.bi-search {
+    position: absolute;
+    top: .45em;
+    left: .8em;
+}
+
+img {
+    height: 7.5em;
+}
+
+.leftStuff {
+    margin-left: -13em;
+}
+
+.topStuff {
+    margin-top: 4em;
+}
+
+.bi:hover {
+    cursor: pointer;
+}
+
+h1 {
+    color: white;
+}
+
+@media screen and (max-width: 1199px) {
+    .logo {
+        display:none;
+    }
+    .leftStuff {
+        margin-left: 0em;
+    }
+}
+
+@media screen and (max-width: 425px) {
+    .logo2 {
+        display: none;
+    }
+    .topStuff {
+        margin-top: 0em;
+    }
+    .btn {
+
+    }
+}
+
+@media screen and (max-width: 550px) {
+    img{
+        height: 20vw;
+    }
+
+    /*.txt-box {
+        width: 8em;
+    }*/
+}

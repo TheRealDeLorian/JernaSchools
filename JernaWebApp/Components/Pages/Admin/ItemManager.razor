@@ -1,0 +1,137 @@
+﻿@using JernaClassLib.Data.DatabaseObjects
+@inject WebItemService itemService
+
+<div>
+    <h2>Add New Item</h2>
+
+    <div class="row">
+        <div class="col">Item Name</div>
+        <div class="col">Price</div>
+        <div class="col">Is displayed in the shop?</div>
+        <div class="col">Description</div>
+        <div class="col">Period Length Id</div>
+        <div class="col">Add</div>
+    </div>
+
+    <div class="row">
+        <div class="col"><input type="text" @bind="newItem.ItemName" /></div>
+        <div class="col"><input type="text" @bind=newItem.Price /></div>
+        <div class="col"><input type="checkbox" @bind="newItem.Isdisplayed" /></div>
+        <div class="col"><textarea @bind=newItem.Description style="resize: none"></textarea></div>
+        <div class="col">
+            <select @bind=newItem.PeriodLengthId type="text">
+                @foreach (var option in periodLengths)
+                {
+                    <option value="@option.Value">@option.Key</option>
+                }
+            </select>
+        </div>
+        <div class="col">
+            <button class="btn btn-outline-success" @onclick="() => SaveNewItemAsync(newItem)">Add Item</button>
+        </div>
+    </div>
+
+    <div class="row">
+        @if (SuccessMessage is not null)
+        {
+            <br />
+            <div class="alert alert-success">@SuccessMessage</div>
+        }
+
+        @if (ErrorMessage is not null)
+        {
+            <br />
+            <div class="alert alert-danger">@ErrorMessage</div>
+        }
+    </div>
+
+
+
+    <h2>Manage Existing Items</h2>
+    <div class="row">
+        <div class="col">Item Name</div>
+        <div class="col">Price</div>
+        <div class="col">Is displayed in the shop?</div>
+        <div class="col">Description</div>
+        <div class="col">Period Length Id</div>
+        <div class="col">Save/Delete buttons</div>
+    </div>
+    @if (items != null)
+    {
+        @foreach (var item in items)
+        {
+            <div class="row">
+                <div class="col"><input type="text" @bind="item.ItemName" /></div>
+                <div class="col"><input type="text" @bind=item.Price /></div>
+                <div class="col"><input type="checkbox" @bind="item.Isdisplayed" /></div>
+                <div class="col"><textarea @bind=item.Description style="resize: none"></textarea></div>
+                <div class="col">
+                    <select @bind=item.PeriodLengthId type="text">
+                        @foreach (var option in periodLengths)
+                        {
+                            <option value="@option.Value">@option.Key</option>
+                        }
+                    </select>
+                </div>
+                <div class="col">
+                    <button class="btn btn-outline-success" @onclick="() => EditItemAsync(item)">Save</button>
+                    <button class="btn btn-outline-danger" @onclick="() => DeleteItemAsync(item)">Delete</button>
+
+                </div>
+
+               
+            </div>
+        }
+    }
+
+</div>
+
+@code {
+    List<Item> items = new();
+    Item newItem = new();
+    private Dictionary<string, int> periodLengths = new Dictionary<string, int> { { "One-time", 1 }, { "Weekly", 2 }, { "Bimonthly", 3 }, { "Monthly", 4 } };
+    string? ErrorMessage;
+    string? SuccessMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await itemService.GetAllItemsAsync();
+        periodLengths = new Dictionary<string, int> { { "One-time", 1 }, { "Weekly", 2 }, { "Bimonthly", 3 }, { "Monthly", 4 } };
+        newItem.PeriodLengthId = 1;
+    }
+
+    async Task EditItemAsync(Item item)
+    {
+        await itemService.UpdateItemAsync(item);
+        StateHasChanged();
+    }
+
+    async Task DeleteItemAsync(Item item)
+    {
+        items.Remove(item);
+        await itemService.DeleteItemAsync(item.Id);
+        StateHasChanged();
+    }
+
+    async Task SaveNewItemAsync(Item item)
+    {
+        try
+        {
+            if (item.ItemName == null)
+            {
+                throw new ArgumentNullException("", "Please enter item name");
+            }
+            await itemService.CreateItemAsync(item);
+            items.Add(item);
+            StateHasChanged();
+            newItem.Id = 0;
+            ErrorMessage = null;
+            SuccessMessage = $"Success! Item {item.ItemName} added to database. Refresh to see changes.";
+        }
+        catch (Exception ex)
+        {
+            SuccessMessage = null;
+            ErrorMessage = $"Error while adding item: {ex.Message}.";
+        }
+    }
+}

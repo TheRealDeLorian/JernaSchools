@@ -1,0 +1,55 @@
+@using Xunit;
+@inherits TestContext
+@using JernaClassLib.Components;
+@using JernaWebApp.Components;
+@using Bunit;
+@using JernaWebApp.Components.Pages;
+
+@code 
+{
+    [Fact]
+    public void Test1()
+    {
+        Assert.True(true);
+    }
+
+    [Fact]
+    public void IndexPage_Loads()
+    {
+        var cut = Render(@<Index/>);
+        cut.MarkupMatches(@<text>
+        <img src="/images/homeschool2.jpg" class="center" style="box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38);" />
+        <div class="container">
+            <div class="row">
+                <div class="col bg-jernalb" style="box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38);">
+                    <div class="container">
+                        <h3 class="text-center">Getting Started</h3>
+                        <ul diff:ignore>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col bg-jernalb" style="box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38);">
+                    <div class="container">
+                        <h3 class="text-center">Why Home School?</h3>
+                        <ul diff:ignore>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+                        </text>);
+    }
+
+
+    // [Fact]
+    // public void PurchasePage_SetsEmail()
+    // {
+    //     var cut = Render(@<Index />);
+        
+    //     cut.MarkupMatches(@<text>
+       
+    // </text>);
+    // }
+}

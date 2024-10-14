@@ -1,0 +1,43 @@
+name: pull request environment
+on: 
+  pull_request: 
+    types: [opened, reopened]
+jobs:
+  deploy-to-kubernetes:
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: deploy to kubernetes
+        run: |
+          export PULL_REQUEST_ID=${{ github.event.pull_request.number }}
+          echo $PULL_REQUEST_ID
+          export RUN_SALT="pr-${PULL_REQUEST_ID}-${GITHUB_RUN_ID}"
+          export NAMESPACE="jerna-pr-$PULL_REQUEST_ID"
+
+          kubectl create namespace $NAMESPACE || true
+          
+          cd ./JernaIntegrationTests
+            kubectl -n $NAMESPACE delete configmap blazor-web-postgres-init || true
+            kubectl -n $NAMESPACE create configmap blazor-web-postgres-init --from-file=20240409.05.27.45.sql
+          cd ..
+
+          docker build -t  144.17.92.12:5000/jerna/blazor-web:$RUN_SALT .
+          docker push  144.17.92.12:5000/jerna/blazor-web:$RUN_SALT
+
+          for file in ./kube-pr/*; do
+            echo "Applying $file"
+            cat $file | envsubst | kubectl apply -f -
+          done
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Hey there champ! check out the pull request at <http://${{ github.event.pull_request.number }}.jernaschools.duckdns.org>'
+            });
+
+
+    

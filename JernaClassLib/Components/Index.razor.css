@@ -1,0 +1,18 @@
+.bg-jernalb {
+    border-radius: 2.5em;
+    padding: 1em;
+    background-color: #e1e1e1;
+    font-size: larger;
+}
+
+.row {
+    padding: 2.5em;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto; 
+    border-radius: 2.5em;
+}

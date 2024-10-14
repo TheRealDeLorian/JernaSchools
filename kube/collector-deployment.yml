@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: jerna
+  name: otel-collector-deployment
+  labels:
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib
+        ports:
+        - containerPort: 4317
+        volumeMounts:
+        - name: otel-config-volume
+          mountPath: /etc/otel-collector-config.yaml
+          subPath: otel-collector-config.yml
+      volumes:
+      - name: otel-config-volume
+        configMap:
+          name: otel-config

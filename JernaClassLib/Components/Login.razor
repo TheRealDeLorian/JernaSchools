@@ -1,0 +1,171 @@
+﻿@page "/login"
+@inject ISecureStorageService SecureStorageService
+@inject IEmailService EmailService
+@inject IAuthService AuthService
+@inject NavigationManager NavManager
+@inject EventService Events
+
+<div class="container bg-jernalb p-4 my-3">
+    <h3>Login</h3>
+
+    <input type="email" autocomplete="email" class="w-50" @bind-value="userEmail" />
+    <button class="btn btn-primary" style="display: flex; margin: 1em;" @onclick="VerifyEmailAsync">Login/Signup</button>
+</div>
+
+
+@if(message is not null)
+{
+    @if (message == emailError || message == randomUserError || message == waitError)
+    {
+        <div class="alert alert-danger container py-3">@message</div>
+    }
+    else
+    {
+        <div class="alert alert-info container py-3">@message</div>
+    }
+}
+
+@if(inputOption)
+{
+    <div class="container bg-jernalb p-4 my-3">
+        <label>After email has been entered, input temporary code here.</label>
+        <br />
+        <input type="text" class="w-50" @bind-value="inputCode" />
+        <button class="btn btn-primary" style="display: flex; margin: 1em;" @onclick="VerifyCodeAsync">Verify code.</button>
+    </div>
+}
+else
+{
+    <div class="container p-4 my-3 text-center">
+        <button @onclick="ToggleInputOption" class="btn btn-primary">
+            Already have your temperary code?
+        </button>
+    </div>
+}
+
+@if(user is not null)
+{
+    <div class="container text-center">
+        <button @onclick="Logout" class="btn bg-danger text-center text-white">
+            Log out
+        </button>
+    </div>
+}
+else
+{
+    <Spinner />
+}
+
+@code {
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    public User? user;
+    public string userEmail = "";
+    public string? message;
+    const string waitError = "Could not log you out, please try again after you see who you are logged in as";
+    const string emailError = "Please input a valid email address.";
+    const string randomUserError = "Cannot log out of a random user account. To login to a different account, just log in as your desired account by entering their email and getting the temporary code.";
+    public string inputCode = "";
+    public bool inputOption = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (jernaAuthState is not null && user is null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            StateHasChanged();
+        }
+    }
+
+    public async Task Logout()
+    {
+        if (user!.Username == "Random User")
+        {
+            message = randomUserError;
+        }
+        else
+        {
+            await SecureStorageService.DeleteKeyValueAsync(Constants.AuthKeyDefault);
+
+            if (jernaAuthState is not null)
+            {
+                user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+                Events.RaiseUserChangeEvent(user);
+                JernaMetrics.UsersLoggedIn.Add(-1);
+            }
+            else
+            {
+                message = waitError;
+            }
+        }
+    }
+
+    public void ToggleInputOption()
+    {
+        inputOption = !inputOption;
+    }
+
+    public async Task VerifyEmailAsync()
+    {
+        string[] leftOf = userEmail.Split('@');
+        if (userEmail is null || !userEmail.Contains('@') || leftOf.Length < 2)
+        {
+            message = emailError;
+            return;
+        }
+
+        try
+        {
+            await EmailService.SendAuthEmailAsync(userEmail);
+            inputOption = true;
+            message = "We just sent you an email! Enter temporary code here.";
+        }
+        catch
+        {
+            message = "Something went wrong on our end.";
+        }
+    }
+
+
+    public async Task VerifyCodeAsync()
+    {
+        if (inputCode.Length != 16)
+        {
+            message = "Invalid temporary code.";
+            return;
+        }
+
+        string localAuthCode = "";
+
+        try
+        {
+            localAuthCode = await AuthService.VerifyTempReturnAuthAsync(inputCode.ToUpper());
+        }
+        catch
+        {
+            message = "Invalid temporary code";
+            return;
+        }
+
+        if (localAuthCode is null)
+        {
+            throw new Exception("API call didn't work, local auth code is null.");
+        }
+
+        await SecureStorageService.DeleteKeyValueAsync(Constants.AuthKeyDefault);
+        bool stored = await SecureStorageService.StoreKeyValueAsync(Constants.AuthKeyDefault, localAuthCode);
+
+        if(stored)
+        {
+            user = await AuthService.GetUserAsync(localAuthCode);
+            message = "Authentication successful.";
+            inputOption = false;
+            if (user is not null) Events.RaiseUserChangeEvent(user);
+            JernaMetrics.UsersLoggedIn.Add(1);
+        }
+        else
+        {
+            message = "We were unable to link your device to your account. Please try again later.";
+        }
+    }
+}

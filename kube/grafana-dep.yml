@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: jerna
+  name: grafana-deployment
+  labels:
+    app: grafana
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:9.4.7
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: admin
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: admin
+        volumeMounts: 
+        - name: datasources
+          mountPath: /etc/grafana/provisioning/datasources/datasources.yml
+          subPath: grafana-datasources.yml
+        - name: dashboards
+          mountPath: /etc/grafana/provisioning/dashboards/dashboards.yml
+          subPath: grafana-dashboards.yml
+        - name: blackboxdashboard
+          mountPath: /etc/grafana/provisioning/dashboards/PrometheusBlackboxExporter.json
+          subPath: PrometheusBlackboxExporter.json
+      volumes:
+      - name: datasources
+        configMap:
+          name: grafana-datasources-config
+      - name: dashboards
+        configMap:
+          name: grafana-dashboards-config
+      - name: blackboxdashboard
+        configMap:
+          name: blackbox-dashboard-config

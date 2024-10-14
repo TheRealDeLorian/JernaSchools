@@ -1,0 +1,80 @@
+﻿@page "/admin"
+@using JernaClassLib.Data.DatabaseObjects
+@using JernaClassLib.Exceptions
+
+@rendermode InteractiveServer
+
+@* @if (user is null || user.Isadmin is null || !user.Isadmin.Value) *@
+{
+    <div class="text-center">You don't have permission to view this page.</div>
+}
+@* else *@
+{
+    <h3>Admin</h3>
+
+    <div class="accordion" id="accordionExample">
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button @(isShow[0] ? "" : "collapsed")" type="button" @onclick="() => toggleAccordion(0)" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    Manage Items
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse @(isShow[0] ? "show" : "")" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                    <ItemManager/>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button  @(isShow[1] ? "" : "collapsed")" type="button" @onclick="() => toggleAccordion(1)" data-bs-toggle=" collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    Manage Users
+                </button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse @(isShow[1] ? "show" : "")" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+
+                    <UserManager />
+
+                </div>
+            </div>
+        </div> 
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button  @(isShow[2] ? "" : "collapsed")" type="button" @onclick="() => toggleAccordion(2)" data-bs-toggle=" collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    Orders
+                </button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse @(isShow[2] ? "show" : "")" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+} 
+
+
+@code {
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    User? user;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (jernaAuthState is not null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            StateHasChanged();
+        }
+    }
+
+    bool[] isShow = [false, false, false];
+
+    void toggleAccordion(int index)
+    {
+        isShow[index] = !isShow[index];
+    }
+}

@@ -1,0 +1,82 @@
+﻿@page "/cart"
+@inject NavigationManager navManager
+@inject ICartService CartService
+@inject EventService Events
+
+@if(user is null || cartItems is null)
+{
+    <Spinner />
+}
+else if (cartItems.Count > 0)
+{
+    @if (cartItems is not null)
+    {
+        <CartCards items="cartItems" updateItemQty="updateItemQty" removeItemFromCart="removeItemFromCart"/>
+    }
+    else
+    {
+        <Spinner />
+    }
+    <div id="respond" class="respond container styling">
+        <h3>Order total: @cartItems?.Sum(ci => ci.Item?.Price * ci.Quantity)</h3>
+    </div>
+    <div id="respond" class="respond container">
+        <button type="submit" class="btn btn-primary w-25" @onclick='() => NavigateTo("/purchase")'>Complete Purchase</button>
+    </div>
+}
+else
+{
+    <div id="respond" class="respond container styling text-center">
+        <h1>Your cart is empty. </h1>
+    </div>
+}
+
+@code {
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    User? user;
+    List<CartItem>? cartItems;
+
+    public async Task updateItemQty(int cartItemId, int qty)
+    {
+        if (cartItems is not null)
+        {
+            var ci = cartItems.Single(i => i.Id == cartItemId);
+            JernaMetrics.ItemsInAllCarts.Add(qty - ci.Quantity);
+            ci.Quantity = qty;
+            await CartService.EditCartItemQtyAsync(ci);
+            Events.RaiseCartTotalChangeEvent((await CartService.GetAllItemsInCartAsync(user!.Id)).Sum(ci => ci.Quantity));
+            StateHasChanged();
+        }
+    }
+
+    public async Task removeItemFromCart(int cartItemId)
+    {
+        if (cartItems is not null)
+        {
+            var ci = cartItems.Single(i => i.Id == cartItemId);
+            JernaMetrics.ItemsInAllCarts.Add(0 - ci.Quantity);
+            ci.Quantity = 0;
+            await CartService.EditCartItemQtyAsync(ci);
+            cartItems.Remove(ci);
+            Events.RaiseCartTotalChangeEvent((await CartService.GetAllItemsInCartAsync(user!.Id)).Sum(ci => ci.Quantity));
+            StateHasChanged();
+        }
+    }
+
+    void NavigateTo(string s)
+    {
+        Global.hMenu = false;
+        navManager.NavigateTo(s);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (jernaAuthState is not null && user is null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            cartItems = await CartService.GetAllItemsInCartAsync(user.Id);
+            StateHasChanged();
+        }
+    }
+}

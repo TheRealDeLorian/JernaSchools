@@ -1,0 +1,208 @@
+﻿@page "/tools-for-parents"
+@inject IItemService ItemService
+@inject ICartService CartService
+@inject IConfiguration Config
+@inject EventService Events
+
+<div class="container" style="border-radius: 2.5em; padding: 1em;">
+    <h3>We use the letter subscriptions as the basis for some of our science lessons. Each letter includes: </h3>
+    <ul>
+        <li>A letter to your child(ren) talking about that particular animal, plant, or dinosaur</li>
+        <li>A coloring page of that specified type</li>
+        <li>At least one activity regarding that type</li>
+        <li>Game cards and game instructions. Initially, there will not be enough cards to play the game, but your deck of cards will grow as you receive additional letters</li>
+    </ul>
+</div>
+
+@if (!submitted)
+{
+    <div class="container bg-jernalb py-3" style="border-radius: 2.5em; padding: 1em; box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38);">
+            <EditForm Model="@tfpForm" OnValidSubmit="@HandleValidSubmit" FormName="ToolsForParentsForm">
+                <div class="row m-2">
+                    <DataAnnotationsValidator />
+                </div>
+
+                <div class="row m-2">
+                    <label class="col">Name: </label>
+                    <InputText @bind-Value="tfpForm.Name" class="col-9" />
+                </div>
+
+                <div class="row m-2">
+                    <label class="col">Email:</label>
+                    <InputText @bind-Value="tfpForm.Email" class="col" />
+                </div>
+
+                <div class="row m-2">
+                    <label class="col">Address:</label>
+                    <InputText @bind-Value="tfpForm.Address" class="col" />
+                </div>
+
+                <div class="row m-2 flex-wrap">
+                    <div class="col">
+                        <label class="col">Subscription Frequency:</label>
+                        <InputSelect @bind-Value="tfpForm.SubscriptionLength" class="col"> 
+                            @foreach (SubscriptionLength subLength in Constants.SubscriptionLengths) //TODO: Create a service to get these from the database instead of constants.
+                            {
+                                <option value="@subLength.Value">@subLength.Display</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-2">
+                        <label class="col">Digital Tool:</label>
+                        <InputCheckbox @bind-Value="tfpForm.IsDigital" class="col" />
+                    </div>
+                </div>
+
+                <div class="row m-2 flex-wrap">
+                    <div class="col">
+                        <label class="col">Tool Type:</label>
+                        <InputSelect @bind-Value="tfpForm.ToolsType" class="col">
+                            @foreach (ToolsForParentsType toolType in Constants.ToolsForParentsTypes) //TODO: Create a service to get these from the database instead of constants.
+                            {
+                                <option value="@toolType.Value">@toolType.Display</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="row m-2">
+                    <label class="col">Amount of Kids you have</label>
+                    <input class="col" type="number" max="10" min="0" @onchange="ChangeKidAmount" />
+                </div>
+
+                @for (int i = 0; i < tempChildrensAge.Length; i++)
+                {
+                    int j = i;
+                    <div class="row m-2">
+                        <label class="col">Child's age:</label>
+                        <InputNumber class="col" @bind-Value="tempChildrensAge[j]" />
+                    </div>
+                }
+
+                <div class="row m-2">
+                    <button type="submit" class="btn btn-primary w-25">Submit</button>
+                </div>
+
+                <div class="row m-2">
+                    <ValidationSummary class="col m-3" />
+                </div>
+            </EditForm>
+    </div>
+}
+
+<div class="m-3">
+    @if (submitted)
+    {
+        <div class="alert alert-info container py-3">Form successfully submitted.</div>
+    }
+</div>
+
+@code {
+    ToolsForParentsForm tfpForm = new();
+    int[] tempChildrensAge = [];
+    bool submitted = false;
+    [Parameter]
+    public string type { get; set; } = Constants.AllSearch;
+    [Parameter]
+    public string keyword { get; set; } = "";
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    User? user;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (jernaAuthState is not null && user is null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            StateHasChanged();
+        }
+    }
+
+
+    public async Task HandleValidSubmit()
+    {
+        tfpForm.ChildrensAges = tempChildrensAge.ToList(); //TODO: Actually handle tools for parents.
+        Item item = new();
+        var tempItems = await ItemService.GetAllItemsAsync();
+
+        // TODO: Refactor this to be better, too much indentation. 
+        if (tfpForm.ToolsType == "Plant")
+        {
+            if (tfpForm.SubscriptionLength == "Weekly")
+            {
+                item = tempItems.Where(i => i.Id == 33).Single();
+            }
+            else if (tfpForm.SubscriptionLength == "Biweekly")
+            {
+                item = tempItems.Where(i => i.Id == 34).Single();
+            }
+            else
+            {
+                item = tempItems.Where(i => i.Id == 35).Single();
+            }
+        }
+        else if (tfpForm.ToolsType == "Animal")
+        {
+            if (tfpForm.SubscriptionLength == "Weekly")
+            {
+                item = tempItems.Where(i => i.Id == 42).Single();
+            }
+            else if (tfpForm.SubscriptionLength == "Biweekly")
+            {
+                item = tempItems.Where(i => i.Id == 43).Single();
+            }
+            else
+            {
+                item = tempItems.Where(i => i.Id == 44).Single();
+            }
+        }
+        else
+        {
+            if (tfpForm.SubscriptionLength == "Weekly")
+            {
+                item = tempItems.Where(i => i.Id == 21).Single();
+            }
+            else if (tfpForm.SubscriptionLength == "Biweekly")
+            {
+                item = tempItems.Where(i => i.Id == 22).Single();
+            }
+            else
+            {
+                item = tempItems.Where(i => i.Id == 24).Single();
+            }
+        }
+
+        await addItemToCart(item.Id, tfpForm.Email);
+        submitted = true;
+    }
+
+    public async Task addItemToCart(int itemId, string? contactInfo)
+    {
+        if (user is not null)
+        {
+            await CartService.AddCartItemAsync(user.Id, itemId, contactInfo);
+            Events.RaiseCartTotalChangeEvent((await CartService.GetAllItemsInCartAsync(user.Id)).Sum(ci => ci.Quantity));
+            JernaMetrics.ItemsInAllCarts.Add(1);
+        }
+    }
+
+    void ChangeKidAmount(ChangeEventArgs args)
+    {
+        int value = 0;
+
+        try
+        {
+            if (args.Value is not null)
+            {
+                value = (int)args.Value;
+                if (value > 10 || value < 0) return;
+                tempChildrensAge = new int[value];
+            }
+        }
+        catch
+        {
+            Console.WriteLine("Did not add kids");
+        }
+    }
+}

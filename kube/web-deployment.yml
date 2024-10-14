@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: jerna
+  name: blazor-web-deployment
+  labels:
+    app: blazor-web
+spec:
+  selector:
+    matchLabels:
+      app: blazor-web
+  template:
+    metadata:
+      labels:
+        app: blazor-web
+    spec:
+      containers:
+      - name: blazor-web
+        image: 144.17.92.12:5000/jerna/blazor-web:${GITHUB_RUN_ID}
+        ports:
+        - containerPort: 8080
+        env:
+        - name: COLLECTOR_URL
+          value: http://otel-collector-service:4317/
+        - name: db
+          value: user id=jerna;database=jernadb;password=P@ssw0rd!;host=blazor-web-db-service;
+        - name: emailpassword
+          value: ${EMAIL_PASSWORD}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080 #8975
+          initialDelaySeconds: 5
+          periodSeconds: 5 
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080 #8975
+          initialDelaySeconds: 5
+          periodSeconds: 5 

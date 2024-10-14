@@ -1,0 +1,30 @@
+﻿@inject NavigationManager navMan
+
+<div class="container-fluid py-3">
+    <div class="row">
+        <div class="col-auto border-bottom border-dark" />
+        @if (FocusedTabName == Constants.DigitalSearch)
+        {
+            <div @onclick="() => MoveToGradePage(Constants.DigitalSearch)" class="col text-center user-select-none border border-bottom-0 border-dark rounded-top">@tabNames[0]</div>
+            <div @onclick="() => MoveToGradePage(Constants.PhysicalSearch)" class="col text-center user-select-none border border-dark rounded-top bg-secondary bg-opacity-50">@tabNames[1]</div>
+        }
+        else
+        {
+            <div @onclick="() => MoveToGradePage(Constants.DigitalSearch)" class="col text-center user-select-none border border-dark rounded-top bg-secondary bg-opacity-50">@tabNames[0]</div>
+            <div @onclick="() => MoveToGradePage(Constants.PhysicalSearch)" class="col text-center user-select-none border border-bottom-0 border-dark rounded-top">@tabNames[1]</div>
+        }
+        <div class="col-auto border-bottom border-dark" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? FocusedTabName { get; set; }
+
+    string[] tabNames = ["Digital", "Physical"];
+
+    public void MoveToGradePage(string page)
+    {
+        navMan.NavigateTo($"/search/{page}");
+    }
+}

@@ -1,0 +1,29 @@
+﻿@page "/about"
+@inject IConfiguration Config
+
+<div class="container">
+    <div class="row" style="color:white;">
+        Placeholder text.
+    </div>
+    @if (Config["featureflags"] is not null && Config["featureflags"] == "true")
+    {
+        <div class="text-white text-center bg-danger rounded m-3 p-3 h1">Feature Flags are on right now</div>
+    }
+    <div>
+
+    </div>
+    <div class="row">
+        <div class="col bg-jernalb" style="box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38); border-radius: 2.5em; padding: 1em;">
+            <div class="container">
+                <h3 class="text-center">Who is Jerna?</h3>
+                Jerna is a loving Mother, Teacher, Education Enthusiast with a bachelors degree who wants all families to have the best Home School Experience that they can.
+
+                She has home schooled all five of her amazing children who have grown up to be....
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+}

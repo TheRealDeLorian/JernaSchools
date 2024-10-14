@@ -1,0 +1,23 @@
+﻿@inject NavigationManager navManager
+
+<footer id="footer" class="p-3 our-color" style="font-size: 24px;">
+    <div class="d-flex flex-wrap justify-content-around">
+        <div class="footElements p-5 user-select-none" @onclick='() => NavigateTo("/about")'>
+            About
+        </div>
+        <div class="footElements p-5 user-select-none" @onclick='() => NavigateTo("/contact")'>
+            Contact Us
+        </div>
+        <div class="footElements p-5 user-select-none" @onclick='() => NavigateTo("/communities")'>
+            Communities
+        </div>
+    </div>
+</footer>
+
+@code{
+    void NavigateTo(string s)
+    {
+        Global.hMenu = false;
+        navManager.NavigateTo(s, true);
+    }
+}

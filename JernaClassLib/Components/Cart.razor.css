@@ -1,0 +1,24 @@
+.styling {
+    border-radius: 2.5em;
+    padding: 1em;
+}
+
+.styling2 {
+    border-radius: 2.5em;
+    padding: 1em;
+    box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38);
+}
+/*
+@media screen and (max-width: 425px) {
+    div {
+        display: flex;
+        flex-wrap: wrap;
+    }
+}
+
+@media screen and (max-width: 320px) {
+    div {
+        display: flex;
+        flex-wrap: wrap;
+    }
+}*/

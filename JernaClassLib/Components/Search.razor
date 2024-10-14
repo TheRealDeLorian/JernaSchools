@@ -1,0 +1,137 @@
+﻿@page "/search/{type}/{keyword}"
+@page "/search/{type}"
+@inject IItemService ItemService
+@inject ITagService TagService
+@inject ICartService CartService
+@inject IConfiguration Config
+@inject EventService Events
+@inject NavigationManager NavManager
+@*
+    //type could be either all, age, digital, or physical
+    //changes the page to add buttons to match the search type
+    //those buttons could be a component probably
+*@
+
+@if(type == Constants.GradeSearch)
+{
+    <GradeBar FocusedTabIndex=@(keyword is null ? '0' : keyword[0]) />
+}
+else if (type == Constants.DigitalSearch || type == Constants.PhysicalSearch)
+{
+   <PhysicalDigitalBar FocusedTabName="@type"/>
+}
+
+@if (items is not null)
+{
+    <ItemCards items="items" addItemToCart="addItemToCart" />
+}
+else
+{
+    <Spinner />
+}
+
+@code {
+    [Parameter]
+    public string type { get; set; } = Constants.AllSearch;
+    [Parameter]
+    public string keyword { get; set; } = "";
+    List<Item>? items;
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    User? user;
+
+    async Task initialize()
+    {
+        if (jernaAuthState is not null && Config[Constants.ApplicationType] == Constants.MauiApplication && user is null)
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+
+        var tempItems = await ItemService.GetAllItemsAsync();
+        var secondTempItems = tempItems;
+
+        var tempTags = await TagService.GetAllTagsAsync();
+
+        // Get all from specific type
+        if (type == Constants.GradeSearch)
+        {
+            if (keyword is null) keyword = "0";
+
+            var tempKeyword = keyword switch
+            {
+                "0" => "Preschool",
+                "1" => "Kindergarten",
+                _ => "Grade School",
+            };
+
+            tempItems = tempItems.Where(i => (i.TagItems.Where(ti => ti.Tag?.TagName == tempKeyword)).Count() > 0).ToList();
+        }
+
+        if (type == Constants.DigitalSearch)
+            tempItems = tempItems.Where(i => i.IsDigital is true).ToList();
+
+        if (type == Constants.PhysicalSearch)
+            tempItems = tempItems.Where(i => i.IsPhysical is true).ToList();
+
+
+        // Filter from there
+        List<Item> itemsFilteredByTag = new();
+        if (keyword is not null && type != Constants.GradeSearch)
+        {
+            //Filter by name of the items.
+            tempItems = tempItems.Where(i => i.ItemName.ToLower().Contains(keyword.ToLower()) is true).ToList();
+
+            //Filter by name of tags
+            foreach (var item in secondTempItems)
+            {
+                foreach (var tag in item.TagItems)
+                {
+                    if (!itemsFilteredByTag.Contains(item) && (tag.Tag?.TagName?.ToLower().Contains(keyword.ToLower()) ?? false))
+                    {
+                        itemsFilteredByTag.Add(item);
+                    }
+                }
+            }
+
+            //Combine only the unique items in both lists
+            tempItems = tempItems.Union(itemsFilteredByTag).ToList();
+        }
+
+        //We only want to display the items that are set to be displayed on the database. Some items are basically repeats.
+        tempItems = tempItems.Where(i => i.Isdisplayed is true).ToList();
+        items = tempItems;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await initialize();
+    }
+
+    public async Task addItemToCart(int itemId)
+    {
+        if (user is not null)
+        {
+            if (itemId > 19 && itemId < 51)
+            {
+                NavManager.NavigateTo("/tools-for-parents");
+            }
+            else if (itemId == 65)
+            {
+                NavManager.NavigateTo("/coaching");
+            }
+            else
+            {
+                await CartService.AddCartItemAsync(user.Id, itemId);
+                Events.RaiseCartTotalChangeEvent((await CartService.GetAllItemsInCartAsync(user.Id)).Sum(ci => ci.Quantity));
+                JernaMetrics.ItemsInAllCarts.Add(1);
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (jernaAuthState is not null && Config[Constants.ApplicationType] == Constants.WebApplication && user is null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            StateHasChanged();
+        }
+    }
+}

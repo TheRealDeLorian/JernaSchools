@@ -1,0 +1,222 @@
+﻿@page "/coaching"
+@inject ILogger<Coaching> Logger
+@inject IItemService ItemService
+@inject ICartService CartService
+@inject IConfiguration Config
+@inject EventService Events
+
+
+<div class="container styling">
+    <h3>Coaching</h3>
+    <p>
+        A coaching session is a 30-minute one-on-one to assess your needs and answer your questions.
+        The goal is to help you feel confident in your decision, assess what you need in a homeschool
+        experience, and direct you to resources as needed.
+        One coaching session may be all you need to help you create a direction and plan for you and
+        your kiddos. Ongoing support, at varying levels of support are also available.
+        You do not have to answer all of the questions below. But it will help Jerna be more prepared to
+        help you in a more effective manner. With a coaching session, you get a discount code for
+        downloads or products if you choose to use any of out products.
+    </p>
+</div>
+
+@if (!submitted)
+{
+    <div class="container bg-jernalb styling2 py-3">
+        <EditForm Model="@coachingForm" OnValidSubmit="@HandleValidSubmit" FormName="CoachingForm">
+            <div class="row m-2">
+                <DataAnnotationsValidator />
+            </div>
+
+            <div class="row m-2">
+                <label class="col">Contact Info:</label>
+                <InputText @bind-Value="coachingForm.ContactInfo" class="col-9" />
+            </div>
+
+            <div class="row m-2">
+                <label class="col">Amount of Kids you have</label>
+                <input class="col" type="number" max="10" min="0" @onchange="ChangeKidAmount" />
+            </div>
+
+            @for (int i = 0; i < tempChildrensAge.Length; i++)
+            {
+                int j = i;
+                <div class="row m-2">
+                    <label class="col">Child's age:</label>
+                    <InputNumber class="col" @bind-Value="tempChildrensAge[j]" />
+                </div>
+            }
+
+            <div class="row m-2 flex-wrap">
+                <div class="col">
+                    <label class="col">Learning Environment:</label>
+                    <InputSelect @bind-Value="coachingForm.LearningEnvironment" class="col">
+                        @foreach (LearningEnvironment environment in Constants.LearningEnvironments)
+                        {
+                            <option value="@environment.Value">@environment.Display</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="col-2">
+                    <label class="col">Wants Diploma:</label>
+                    <InputCheckbox @bind-Value="coachingForm.WantsDeploma" class="col" />
+                </div>
+
+                <div class="col-2">
+                    <label class="col">Wants Transcript:</label>
+                    <InputCheckbox @bind-Value="coachingForm.WantsTranscript" class="col" />
+                </div>
+            </div>
+
+            <div class="row m-2">
+                <u class="text-center">Reason for Coaching</u>
+                <div class="opacity-50 d-flex justify-content-between flex-wrap">
+                    <div class="p-1">Learning Challenges or strengths</div>
+                    <div class="p-1">School day outline</div>
+                    <div class="p-1">Includes or Excludes</div>
+                    <div class="p-1">Child's interests</div>
+                    <div class="p-1">Important subjects</div>
+                </div>
+                <InputTextArea @bind-Value="coachingForm.ReasonForCoaching" class="form-control" />
+            </div>
+
+            <div class="row m-2">
+                <button type="submit" class="btn btn-primary w-25">Submit</button>
+            </div>
+
+            <div class="row m-2">
+                <ValidationSummary class="col m-3" />
+            </div>
+        </EditForm>
+    </div>
+}
+
+<div class="m-3">
+    @if (submitted)
+    {
+        <div class="alert alert-info container py-3">Form successfully submitted.</div>
+    }
+</div>
+
+@code {
+    CoachingForm coachingForm = new();
+    // List<string> learningEnvironments = Constants.LearningEnvironments.ToList()
+    public int[] tempChildrensAge = [];
+    bool submitted = false;
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    User? user;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (jernaAuthState is not null && user is null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            StateHasChanged();
+        }
+    }
+
+
+    // public async Task HandleValidSubmit()
+    // {
+    //     tfpForm.ChildrensAges = tempChildrensAge.ToList(); //TODO: Actually handle tools for parents.
+    //     Item item = new();
+    //     var tempItems = await ItemService.GetAllItemsAsync();
+
+    //     // TODO: Refactor this to be better, too much indentation.
+    //     if (tfpForm.ToolsType == "Plant")
+    //     {
+    //         if (tfpForm.SubscriptionLength == "Weekly")
+    //         {
+    //             item = tempItems.Where(i => i.Id == 33).Single();
+    //         }
+    //         else if (tfpForm.SubscriptionLength == "Biweekly")
+    //         {
+    //             item = tempItems.Where(i => i.Id == 34).Single();
+    //         }
+    //         else
+    //         {
+    //             item = tempItems.Where(i => i.Id == 35).Single();
+    //         }
+    //     }
+    //     else if (tfpForm.ToolsType == "Animal")
+    //     {
+    //         if (tfpForm.SubscriptionLength == "Weekly")
+    //         {
+    //             item = tempItems.Where(i => i.Id == 42).Single();
+    //         }
+    //         else if (tfpForm.SubscriptionLength == "Biweekly")
+    //         {
+    //             item = tempItems.Where(i => i.Id == 43).Single();
+    //         }
+    //         else
+    //         {
+    //             item = tempItems.Where(i => i.Id == 44).Single();
+    //         }
+    //     }
+    //     else
+    //     {
+    //         if (tfpForm.SubscriptionLength == "Weekly")
+    //         {
+    //             item = tempItems.Where(i => i.Id == 21).Single();
+    //         }
+    //         else if (tfpForm.SubscriptionLength == "Biweekly")
+    //         {
+    //             item = tempItems.Where(i => i.Id == 22).Single();
+    //         }
+    //         else
+    //         {
+    //             item = tempItems.Where(i => i.Id == 24).Single();
+    //         }
+    //     }
+
+    //     await addItemToCart(item.Id);
+    //     submitted = true;
+    // }
+
+    public async Task addItemToCart(int itemId, string? contactInfo)
+    {
+        string cappedString = "";
+        if (contactInfo is not null)
+        {
+            cappedString = contactInfo.Length <= 100 ? contactInfo : contactInfo.Substring(0, 100);
+        }
+        if (user is not null)
+        {
+            await CartService.AddCartItemAsync(user.Id, itemId, cappedString);
+            JernaMetrics.ItemsInAllCarts.Add(1);
+            Events.RaiseCartTotalChangeEvent((await CartService.GetAllItemsInCartAsync(user.Id)).Sum(ci => ci.Quantity));
+        }
+    }
+
+    public async Task HandleValidSubmit()
+    {
+        coachingForm.ChildrensAge = tempChildrensAge.ToList(); //TODO: Need to actually handle this.
+        Item item = new();
+        var tempItems = await ItemService.GetAllItemsAsync();
+        item = tempItems.Where(i => i.Id == 65).Single();
+        await addItemToCart(item.Id, coachingForm.ContactInfo + coachingForm.ReasonForCoaching);
+        submitted = true;
+    }
+
+    public void ChangeKidAmount(ChangeEventArgs args)
+    {
+        int value = 0;
+
+        try
+        {
+            if (args.Value is not null)
+            {
+                value = (int)args.Value;
+                if (value > 10 || value < 0) return;
+                tempChildrensAge = new int[value];
+            }
+        }
+        catch (Exception e)
+        {
+            JernaLogs.LogException(Logger, $"We did not add kids because of: {e}");
+            Console.WriteLine("Did not add kids");
+        }
+    }
+}

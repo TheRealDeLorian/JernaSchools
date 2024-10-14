@@ -1,0 +1,72 @@
+#footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 10rem; /* Footer height */
+}
+
+.bg-primary {
+    background-color: #3339eb;
+}
+
+.our-color {
+    background-color: #374675;
+    color: white;
+}
+
+.opt-btn {
+    background-color: white;
+    border-radius: 2.5em;
+    min-width: 3.5em;
+}
+
+.txt-box {
+    background-color: white;
+    border-radius: 2.5em;
+    min-width: 8em;
+    padding: 0.4em;
+    padding-left: 2em;
+}
+
+.search {
+    position: relative;
+}
+
+.bi-search {
+    position: absolute;
+    top: .45em;
+    left: .5em;
+}
+
+img {
+    max-height: 7.5em;
+}
+
+.user-select-none:hover {
+    cursor: pointer;
+}
+
+@media screen and (max-width: 629px) {
+    .footElements {
+        font-size: 16px;
+    }
+}
+
+@media screen and (max-width: 425px) {
+    .footElements {
+        padding: 16px;
+    }
+    #footer {
+        height: 16rem; /* Footer height */
+    }
+}
+
+@media screen and (max-width: 320px) {
+    .footElements {
+        padding: 12px;
+    }
+
+    #footer {
+        height: 24rem; /* Footer height */
+    }
+}

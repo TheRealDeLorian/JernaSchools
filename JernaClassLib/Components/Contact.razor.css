@@ -1,0 +1,9 @@
+.bg-jernalb {
+    border-radius: 2.5em;
+    padding: 1em;
+    box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38);
+}
+
+.container {
+    padding: 2.5em;
+}

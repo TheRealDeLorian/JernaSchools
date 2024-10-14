@@ -1,0 +1,163 @@
+﻿@page "/purchase"
+@inject ICartService cartService
+@inject IItemService ItemService
+@inject IPurchaseService PerchaseService
+@inject NavigationManager navManager
+@inject IEmailService EmailService
+@inject EventService Events
+
+@if (user is null || cartItems is null)
+{
+    <Spinner />
+}
+else if (cartItems.Count > 0)
+{
+    <div class="container">
+        <div class="bg-jernalb py-3">
+            <table style="margin-left: auto; margin-right: auto;">
+                <tr class="row">
+                    <th class="col">Item name</th>
+                    <th class="col">Price per unit</th>
+                    <th class="col">Quantity of item</th>
+                    <th class="col">Total cost of item/s</th>
+                </tr>
+                @foreach(CartItem cartItem in cartItems)
+                {
+                    <tr class="row">
+                        <th class="col">@cartItem.Item?.ItemName</th>
+                        <th class="col">$@cartItem.Item?.Price</th>
+                        <th class="col">@cartItem.Quantity</th>
+                        <th class="col">$@(cartItem.Item?.Price * cartItem.Quantity)</th>
+                    </tr>
+                }
+
+                <tr class="row">
+                    <th class="col">Before Tax: $@cartItems?.Sum(ci => ci.Item?.Price * ci.Quantity)</th>
+                    <th class="col">Tax: $@(Math.Round(cartItems!.Sum(ci => ci.Item!.Price * ci.Quantity) * 0.047M, 2))</th>
+                    <th class="col">Total: $@(Math.Round(cartItems!.Sum(ci => ci.Item!.Price * ci.Quantity) * 0.047M, 2) + cartItems?.Sum(ci => ci.Item?.Price * ci.Quantity))</th>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="container">
+        @if (!submitted)
+        {
+            <div class="row bg-jernalb py-3" style="box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38); border-radius: 2.5em; padding: 1em;">
+                <div class="row">
+                    <div class="row text-center">
+                        Please send the required amount to Jerna's Venmo.
+                        Once you have done that, press the button at the bottom of the page to make the purchase offical.
+                    </div>
+                    <div class="row">
+                        <div class="text-center">
+                            Jerna's Venmo: <a href="https://venmo.com/u/Jerna-Watson">https://venmo.com/u/Jerna-Watson</a>
+                        </div>
+                        <img src="/images/VenmoQR.png"/>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-auto">Jerna will use this email: '@submittedEmail'. If that is not what you want, please enter a diffrent email here:</div>
+                    <input class="col" type="email" @bind-value="submittedEmail" />
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary w-25" @onclick='SubmitPayment'>Confirm Payment</button>
+                </div>
+            </div>
+            @* <div class="row bg-jernalb py-3" style="box-shadow: 4.0px 8.0px 8.0px hsl(0deg 0% 0% / 0.38); border-radius: 2.5em; padding: 1em;">
+            </div> *@
+        }
+        else
+        {
+            <div class="alert alert-info container py-3">Thank you for your puchase! Jerna will contact you via @submittedEmail to finish your order!</div>
+        }
+    </div>
+}
+else
+{
+    <div class="container styling text-center">
+        <h1>Your cart is empty. </h1>
+    </div>
+}
+
+
+@code {
+    [CascadingParameter(Name = "JernaAuthState")]
+    JernaAuthState? jernaAuthState { get; set; }
+    User? user;
+    List<CartItem>? cartItems;
+    bool submitted = false;
+    string submittedEmail = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (jernaAuthState is not null && user is null)
+        {
+            user = await jernaAuthState.GetUserAsync() ?? throw new ImpossibleException();
+            cartItems = await cartService.GetAllItemsInCartAsync(user.Id);
+            SetEmail();
+            StateHasChanged();
+        }
+    }
+
+    async Task SubmitPayment()
+    {
+        submitted = true;
+        EmailInfo email = new()
+        {
+            Email = Constants.EmailAddress,
+            Subject = $"New Purchase from {Constants.SanitizeHtml(user!.Username)} !!",
+                HTMLBody = $"<h1>Make sure they venmoed you before going forward! They sould have venmoed you for a total of ${Math.Round(cartItems!.Sum(ci => ci.Item!.Price * ci.Quantity) * 0.079M, 2) + cartItems?.Sum(ci => ci.Item?.Price * ci.Quantity)}</ h1 >" +
+                $"<h3>They want you to contact them at this email: {Constants.SanitizeHtml(submittedEmail)} and keep in mind they where logged in as {user.Username} with this email: {user.Email}</h3>"
+
+        };
+
+        string htmlItems = "";
+        foreach (CartItem cartItem in cartItems!)
+        {
+            htmlItems += $"<li>{cartItem.Quantity} - {cartItem.Item?.ItemName} for a total price of: ${cartItem.Item?.Price * cartItem.Quantity}{(cartItem.ContactInfo is null ? "" : $" - Contact Info: {cartItem.ContactInfo}")}</li>";
+        }
+        htmlItems += $"<p>This was done at: {DateTime.Now}</p>";
+
+        email.HTMLBody += htmlItems;
+
+        await EmailService.SendEmailAsync(email);
+        JernaMetrics.ItemsInAllCarts.Add(0 - cartItems.Sum(ci => ci.Quantity));
+        await PerchaseService.PurchaseCartAsync(user!.Id);
+        Events.RaiseCartTotalChangeEvent(0);
+        JernaMetrics.SubmittedCarts.Add(1);
+    }
+
+    void NavigateTo(string s)
+    {
+        Global.hMenu = false;
+        navManager.NavigateTo(s);
+    }
+
+    void SetEmail()
+    {
+        if (user is null) return;
+
+        if (user.Email.Contains("@RandomEmail.com"))
+        {
+            if (cartItems is null)
+            {
+                submittedEmail = "NOEMAILPROVIDED";
+                return;
+            }
+
+            foreach(CartItem ci in cartItems)
+            {
+                if(ci.Item.PeriodLengthId != 1)
+                {
+                    submittedEmail = ci.ContactInfo ?? "NOEMAILPROVIDED";
+                }
+            }
+
+            submittedEmail = "NOEMAILPROVIDED";
+        }
+        else
+        {
+            submittedEmail = user.Email;
+        }
+    }
+}

@@ -1,0 +1,60 @@
+﻿@using System.Drawing;
+@inject ICartService cartService
+@inject NavigationManager navManager
+
+<div class="col bg-jernalb">
+
+    <div class="col">
+        @if (item.Item.Image is not null)
+        {
+            <img src="data:image/png;base64,@Convert.ToBase64String(item.Item.Image)" />
+        }
+        else
+        {
+            <img src="/images/homeschool2.jpg" />
+        }
+        <div class="col">
+            <h5>@item.Item.Description</h5>
+        </div>
+    </div>
+    <div class="col">
+        <div class="row"><h3> @item.Item.ItemName </h3></div>
+        <div class="row">
+            <h5 class="col my-auto"> $@item.Item.Price</h5>
+        </div>
+        <div class="col">
+            @* <input class="row" type="number" max="10" min="0" @onchange="ChangeItemAmount"> Quantity: <input /> *@
+            <div class="col">
+                <div class="d-flex">
+                    <h5 style="margin: 1em; margin-left: 0em;">Quantity:</h5>
+                    <input class="" style="margin: 1em;" type="number" max="10" min="1" @bind-value="@item.Quantity" @onclick="() => UpdateItemQty(item)" @onsubmit="() => UpdateItemQty(item)" />
+                </div>
+            </div>
+            <div class="col">
+                <button @onclick="() => RemoveItemFromCart(item)" class="btn bg-danger text-center text-white">
+                    Remove item
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public CartItem item { get; set; } = null!;
+    [Parameter, EditorRequired]
+    public Func<int, Task> removeItemFromCart { get; set; } = null!;
+    [Parameter, EditorRequired]
+    public Func<int, int, Task> updateItemQty { get; set; } = null!;
+
+    public async Task RemoveItemFromCart(CartItem item)
+    {
+        await removeItemFromCart(item.Id);
+    }
+
+    public async Task UpdateItemQty(CartItem item)
+    {
+        await updateItemQty(item.Id, item.Quantity);
+    }
+}

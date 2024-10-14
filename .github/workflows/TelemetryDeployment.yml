@@ -1,0 +1,165 @@
+name: jerna-deploy-to-class-server
+on:
+  push:
+    branches:
+      - main
+jobs:
+  linting:
+    runs-on: [self-hosted]
+    steps:
+      - name: check out repo code
+        uses: actions/checkout@v4
+      - name: linting
+        run: |
+          docker run -t --rm -v $(pwd):/appLint -w /appLint/JernaWebApp -e DOTNET_CLI_HOME="/tmp/dotnet" --user $(id -u):$(id -g) mcr.microsoft.com/dotnet/sdk:8.0 dotnet format --verify-no-changes --severity warn
+
+  buildwarnings:
+    runs-on: [self-hosted]
+    steps:
+      - name: check out repo code
+        uses: actions/checkout@v4
+      - name: buildwarnings
+        run: |
+          docker run -t --rm -v $(pwd):/appBW -w /appBW -e DOTNET_CLI_HOME="/tmp/dotnet" --user $(id -u):$(id -g) mcr.microsoft.com/dotnet/sdk:8.0 dotnet build JernaWebApp -warnaserror
+
+  unit_tests:
+    runs-on: [self-hosted]
+    steps:
+      - name: check out repo code
+        uses: actions/checkout@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+      - name: UnitTest
+        run: |
+          dotnet test ./JernaUnitTests
+
+  # integration_tests:
+  #   runs-on: [self-hosted]
+  #   steps:
+  #     - name: check out repo code
+  #       uses: actions/checkout@v4
+  #     - name: Setup .NET SDK
+  #       uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+  #     - name: "IntegrationTest & Coverage"
+  #       run: |
+  #         dotnet test ./JernaIntegrationTests
+
+  deploydocker:
+    runs-on: [self-hosted]
+    env:
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+    needs: [unit_tests, buildwarnings, linting]
+    steps:
+      - name: check out repo code
+        uses: actions/checkout@v4
+      - name: deploy docker
+        run: |
+          export EMAIL_PASSWORD=$EMAIL_PASSWORD
+          cd ./Staging
+          docker compose pull
+          docker compose up --build -d
+  deployk8s:
+    runs-on: [self-hosted]
+    env:
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+    needs: [unit_tests, buildwarnings, linting]
+    steps:
+      - name: check out repo code
+        uses: actions/checkout@v4
+      - name: deploy k8s
+        run: |
+          export EMAIL_PASSWORD=$EMAIL_PASSWORD
+          kubectl create namespace jerna || true
+
+          kubectl -n jerna delete configmap blazor-web-postgres-init || true
+          kubectl -n jerna create configmap blazor-web-postgres-init --from-file=./kubeconfigs/20240409.05.27.45.sql
+
+          docker build -t 144.17.92.12:5000/jerna/blazor-web:$GITHUB_RUN_ID .
+          docker push 144.17.92.12:5000/jerna/blazor-web:$GITHUB_RUN_ID
+
+
+          cd ./kubeconfigs
+            kubectl -n jerna delete configmap otel-config || true
+            kubectl -n jerna create configmap otel-config --from-file=otel-collector-config.yml
+            kubectl -n jerna delete configmap grafana-datasources-config || true
+            kubectl -n jerna create configmap grafana-datasources-config --from-file=grafana-datasources.yml
+            kubectl -n jerna delete configmap grafana-dashboards-config || true
+            kubectl -n jerna create configmap grafana-dashboards-config --from-file=grafana-dashboards.yml
+            kubectl -n jerna delete configmap blackbox-dashboard-config || true
+            kubectl -n jerna create configmap blackbox-dashboard-config --from-file=PrometheusBlackboxExporter.json
+          cd ..
+
+
+
+          for file in ./kube/*; do
+            echo "Applying $file"
+            cat $file | envsubst | kubectl apply -f -
+          done
+
+  notify_success:
+    runs-on: [self-hosted]
+    needs: [deploydocker, deployk8s]
+    if: success()
+    steps:
+      - name: Microsoft Teams Success Notification
+        uses: skitionek/notify-microsoft-teams@master
+        with:
+          webhook_url: ${{ secrets.JERNA_HOOK }}
+          needs: ${{ toJson(needs) }}
+          job: ${{ toJson(job) }}
+          steps: ${{ toJson(steps) }}
+
+  notify_failure:
+    runs-on: [self-hosted]
+    needs: [deploydocker, deployk8s]
+    if: failure()
+    steps:
+      - name: Microsoft Teams Failure Notification
+        uses: skitionek/notify-microsoft-teams@master
+        with:
+          webhook_url: ${{ secrets.JERNA_HOOK }}
+          raw: >-
+            {
+              "@type": "MessageCard",
+              "@context": "http://schema.org/extensions",
+              "correlationId": "0b72cc8a2cea509ba06b41892066784d7f602834",
+              "themeColor": "#345",
+              "title": "The JernaSchools app deployment did not finish.",
+              "summary": "At least one step failed in the workflow",
+              "sections": [
+                {
+                  "activityTitle": "",
+                  "activitySubtitle": "Failure",
+                  "activityImage": "https://cdn4.iconfinder.com/data/icons/web-design-and-development-88/64/web_application_error_crash_error-512.png"
+                }
+              ],
+              "potentialAction": [
+                {
+                  "@type": "OpenUri",
+                  "name": "Repository",
+                  "targets": [
+                    {
+                      "os": "default",
+                      "uri": "https://github.com/"
+                    }
+                  ]
+                },
+                {
+                  "@type": "OpenUri",
+                  "name": "Compare",
+                  "targets": [
+                    {
+                      "os": "default",
+                      "uri": "https://github.com/"
+                    }
+                  ]
+                }
+              ],
+              "text": ""
+            }
+
+      #del

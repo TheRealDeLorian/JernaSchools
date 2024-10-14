@@ -1,0 +1,38 @@
+﻿@inject NavigationManager navMan
+
+<div class="container-fluid">
+    <div class="row py-4">
+        <div class="col-auto border-dark border-bottom" />
+        @for (int i = 0; i < 9; i++)
+        {
+            int j = i;
+
+            if(i == FocusedTabIndex - 48) //Offset by 47 because of ascii value 0 and i starts at 1
+            {
+                <div @onclick="() => MoveToGradePage(j)" class="col text-center user-select-none border border-bottom-0 border-dark rounded-top">@tabNames[i]</div>
+            }
+            else
+            {
+                <div @onclick="() => MoveToGradePage(j)" class="col text-center user-select-none border border-dark rounded-top bg-secondary bg-opacity-50">@tabNames[i]</div>
+            }
+        }
+        <div class="col-auto border-dark border-bottom" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public char FocusedTabIndex { get; set; }
+
+    string[] tabNames = ["Pre", "K", "1st", "2nd", "3rd", "4th", "5th", "Jr", "HS"];
+
+    protected override void OnParametersSet()
+    {
+        FocusedTabIndex = FocusedTabIndex < 48 ? '0' : FocusedTabIndex > 56 ? '8' : FocusedTabIndex;
+    }
+
+    public void MoveToGradePage(int newIndex)
+    {
+        navMan.NavigateTo($"/search/{Constants.GradeSearch}/{newIndex}");
+    }
+}
