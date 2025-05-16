@@ -50,9 +50,7 @@ public partial class JernaContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder
-            .HasPostgresExtension("pg_catalog", "azure")
-            .HasPostgresExtension("pg_catalog", "pgaadauth");
+     
 
         modelBuilder.Entity<AdminHistory>(entity =>
         {
@@ -257,9 +255,7 @@ public partial class JernaContext : DbContext
 
             entity.ToTable("temp_code");
 
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("nextval('authcodes_id_seq'::regclass)")
-                .HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Code)
                 .HasMaxLength(16)
                 .HasColumnName("code");

@@ -35,12 +35,10 @@ public class WebAuthService : IAuthService
     public async Task<User?> GetUserAsync(string authCode)
     {
         var context = _dbContextFactory.CreateDbContext();
-        var r = await context.Users
+        return await context.Users
             .Include(u => u.UserAuthCodes)
             .ThenInclude(ua => ua.AuthCode)
-            .SingleAsync(u => u.UserAuthCodes
-                .Single(ua => ua.AuthCode!.Code == authCode).AuthCode!.Code == authCode);
-        return r;
+            .FirstOrDefaultAsync(u => u.UserAuthCodes.Any(ua => ua.AuthCode != null && ua.AuthCode.Code == authCode));
     }
 
     public async Task<UserDTO> GenerateRandomUserAsync()
