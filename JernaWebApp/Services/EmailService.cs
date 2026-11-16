@@ -5,6 +5,8 @@ using JernaClassLib.Forms;
 using JernaClassLib.IServices;
 using JernaWebApp.IWebServices;
 using MimeKit;
+using MailKit.Net.Smtp;
+using MailKit;
 
 namespace JernaWebApp.Services;
 
@@ -75,12 +77,16 @@ public class EmailService : IEmailService
         };
         message.Body = builder.ToMessageBody();
 
-        using (var client = new MailKit.Net.Smtp.SmtpClient())
+        using (var client = new SmtpClient())
         {
-            client.Connect("smtp.gmail.com", 587, false);
-            client.Authenticate(Constants.EmailAddress, $"{_configuration[Constants.ConfigKeyForEmailPass]}");
-            client.Send(message);
-            client.Disconnect(true);
+            await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(Constants.EmailAddress, $"{_configuration[Constants.ConfigKeyForEmailPass]}");
+
+            // Create a SendRequest that wraps the message
+            var request = new SendRequest(message);
+            await client.SendAsync(request);
+
+            await client.DisconnectAsync(true);
         }
 
         await Task.CompletedTask;
